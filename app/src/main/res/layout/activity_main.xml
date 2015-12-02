@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.wearable.view.BoxInsetLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
+    android:layout_height="match_parent" android:id="@+id/container" tools:context=".MainActivity"
+    tools:deviceIds="wear">
+
+    <RelativeLayout android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <TextView android:id="@+id/slapp_count" app:layout_box="all" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:text="Slapps: 0"/>
+
+        <TextView android:id="@+id/clock" app:layout_box="all" android:layout_gravity="bottom|start"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:textColor="@android:color/white" />
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/slapp_count"
+            android:text = "Reset"
+            android:id = "@+id/reset_button"
+            />
+
+    </RelativeLayout>
+</android.support.wearable.view.BoxInsetLayout>

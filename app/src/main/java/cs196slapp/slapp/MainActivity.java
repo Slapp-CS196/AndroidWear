@@ -77,7 +77,10 @@ public class MainActivity extends WearableActivity implements SensorEventListene
 
     @Override
     public void onSensorChanged(SensorEvent event){
-        if (event.values[2] > 9.0 && Math.abs(event.values[0]) < 5 && Math.abs(event.values[1]) < 5) {
+        ((TextView)findViewById(R.id.x)).setText("X: " + event.values[0]);
+        ((TextView)findViewById(R.id.y)).setText("Y: " + event.values[1]);
+        ((TextView)findViewById(R.id.z)).setText("Z: " + event.values[2]);
+        if (event.values[2] > 7.0 && Math.abs(event.values[0]) < 5 && Math.abs(event.values[1]) < 5) {
             if (!slapActive) {
                 slaps++;
                 slapActive = true;
@@ -85,7 +88,7 @@ public class MainActivity extends WearableActivity implements SensorEventListene
                 ((TextView)findViewById(R.id.slapp_count)).setText("Slapps: " + slaps);
                 sendTestSlapp();
             }
-        } else if (event.values[2] <= 9.0 && slapActive) {
+        } else if (event.values[2] <= 7.0 && slapActive) {
             slapActive = false;
         }
     }

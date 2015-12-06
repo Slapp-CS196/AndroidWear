@@ -67,5 +67,23 @@
             android:text="Start Training"
             />
 
+        <Button
+            android:id="@+id/training_yes"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/training_toggle"
+            android:text="Yes"
+            android:visibility="gone"
+            />
+
+        <Button
+            android:id="@+id/training_no"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/training_toggle"
+            android:text="No"
+            android:visibility="gone"
+            />
+
     </RelativeLayout>
 </android.support.wearable.view.BoxInsetLayout>

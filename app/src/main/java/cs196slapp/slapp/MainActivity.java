@@ -107,7 +107,7 @@ public class MainActivity extends WearableActivity implements SensorEventListene
     public void onSensorChanged(SensorEvent event){
 
         if(detection) {
-            if (Math.abs(event.values[2]) > 9.0 || Math.abs(event.values[0]) < 7.0 || Math.abs(event.values[1]) < 7.0){
+            if (Math.abs(event.values[2]) > 9.0 && Math.abs(event.values[0]) < 6.0 && Math.abs(event.values[1]) < 6.0){
                 if (!slappActive) {
                     slaps++;
                     slappActive = true;
@@ -118,13 +118,24 @@ public class MainActivity extends WearableActivity implements SensorEventListene
             }else if (event.values[2] <= 9.0 && slappActive) {
                 slappActive = false;
                 Toast.makeText(this, "Slapp!", Toast.LENGTH_SHORT).show();
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
-            if(event.values[0] > maxx)
+            if(Math.abs(event.values[0]) > maxx) {
                 ((TextView) findViewById(R.id.x)).setText("X: " + event.values[0]);
-            if(event.values[1] > maxy)
+                maxx = Math.abs(event.values[0]);
+            }
+            if(Math.abs(event.values[1]) > maxy) {
                 ((TextView) findViewById(R.id.y)).setText("Y: " + event.values[1]);
-            if(event.values[2] > maxz)
+                maxy = Math.abs(event.values[1]);
+            }
+            if(Math.abs(event.values[2]) > maxz) {
                 ((TextView) findViewById(R.id.z)).setText("Z: " + event.values[2]);
+                maxz = Math.abs(event.values[2]);
+            }
         }
 
         if(training){

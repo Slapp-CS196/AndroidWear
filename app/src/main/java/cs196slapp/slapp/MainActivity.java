@@ -16,6 +16,7 @@ import android.widget.Toast;
 import com.google.android.gms.common.api.GoogleApiClient;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -31,8 +32,12 @@ public class MainActivity extends WearableActivity implements SensorEventListene
     private SensorManager sensorManager;
     private Sensor linear_acc;
 
+    private ArrayList<Float> logx = new ArrayList<Float>();
+    private ArrayList<Float> logy = new ArrayList<Float>();
+    private ArrayList<Float> logz = new ArrayList<Float>();
+
     int slaps = 0;
-    boolean slapActive = false;
+    boolean slappActive = false, detection = true, training = false;
 
 
     private BoxInsetLayout mContainerView;
@@ -65,6 +70,8 @@ public class MainActivity extends WearableActivity implements SensorEventListene
         sensorManager.registerListener(this, linear_acc, SensorManager.SENSOR_DELAY_NORMAL);
 
         Button reset_button = (Button) findViewById(R.id.reset_button);
+        Button slapp_toggle = (Button) findViewById(R.id.slapp_toggle);
+        Button train_toggle = (Button) findViewById(R.id.training_toggle);
 
         reset_button.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -73,23 +80,46 @@ public class MainActivity extends WearableActivity implements SensorEventListene
                 ((TextView)findViewById(R.id.slapp_count)).setText("Slapps: " + slaps);
             }
         });
+
+        slapp_toggle.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                detection = !detection;
+                ((Button)findViewById(R.id.slapp_toggle)).setText("Turn slapping " + ((detection)?"off" : "on"));
+            }
+        });
+
+        train_toggle.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                training = !training;
+                ((Button)findViewById(R.id.training_toggle)).setText("" + ((training)? "Stop" : "Start") + "training");
+            }
+        });
     }
 
     @Override
     public void onSensorChanged(SensorEvent event){
-        ((TextView)findViewById(R.id.x)).setText("X: " + event.values[0]);
-        ((TextView)findViewById(R.id.y)).setText("Y: " + event.values[1]);
-        ((TextView)findViewById(R.id.z)).setText("Z: " + event.values[2]);
-        if (event.values[2] > 7.0 && Math.abs(event.values[0]) < 5 && Math.abs(event.values[1]) < 5) {
-            if (!slapActive) {
-                slaps++;
-                slapActive = true;
+        if(detection) {
+            ((TextView) findViewById(R.id.x)).setText("X: " + event.values[0]);
+            ((TextView) findViewById(R.id.y)).setText("Y: " + event.values[1]);
+            ((TextView) findViewById(R.id.z)).setText("Z: " + event.values[2]);
+            if (event.values[2] > 9.0 || Math.abs(event.values[0]) > 9.0 || Math.abs(event.values[1]) > 9.0){
+                if (!slappActive) {
+                    slaps++;
+                    slappActive = true;
+                    ((TextView) findViewById(R.id.slapp_count)).setText("Slapps: " + slaps);
+                    sendTestSlapp();
+                    logEvent();
+                }
+            }else if (event.values[2] <= 9.0 && slappActive) {
+                slappActive = false;
                 Toast.makeText(this, "Slapp!", Toast.LENGTH_SHORT).show();
-                ((TextView)findViewById(R.id.slapp_count)).setText("Slapps: " + slaps);
-                sendTestSlapp();
             }
-        } else if (event.values[2] <= 7.0 && slapActive) {
-            slapActive = false;
+        }
+
+        if(training){
+
         }
     }
 
@@ -99,6 +129,10 @@ public class MainActivity extends WearableActivity implements SensorEventListene
 
     public void sendTestSlapp(){
         //Phone app integration goes here.
+    }
+
+    public void logEvent(){
+
     }
 
     @Override
@@ -130,5 +164,16 @@ public class MainActivity extends WearableActivity implements SensorEventListene
             mContainerView.setBackground(null);
             mClockView.setVisibility(View.GONE);
         }
+    }
+
+    public void trainSlapp(){
+        ArrayList<Float> logx = new ArrayList<Float>();
+        ArrayList<Float> logy = new ArrayList<Float>();
+        ArrayList<Float> logz = new ArrayList<Float>();
+
+    }
+
+    public boolean checkSlapp() {
+        return true;
     }
 }

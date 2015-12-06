@@ -1,3 +1,3 @@
 Slapp - Android Wear Client
 
-Current state: 
+Current state: Rudimentary, uncalibrated Slapp detection

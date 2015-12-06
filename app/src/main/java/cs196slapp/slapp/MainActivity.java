@@ -38,7 +38,7 @@ public class MainActivity extends WearableActivity implements SensorEventListene
 
     private float maxx = (float) 0.0, maxy = (float) 0.0, maxz = (float) 0.0;
     private int slapps = 0;
-    private boolean slappActive = false, detection = true, training = false;
+    private boolean slappActive = false, detection = false, training = false;
 
 
     private BoxInsetLayout mContainerView;

@@ -65,6 +65,7 @@
             android:id="@+id/training_toggle"
             android:layout_below="@id/z"
             android:text="Start Training"
+            android:visibility="gone"
             />
 
         <Button

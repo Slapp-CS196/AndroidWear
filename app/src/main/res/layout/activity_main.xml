@@ -22,6 +22,7 @@
             android:layout_below="@id/slapp_count"
             android:text = "Reset"
             android:id = "@+id/reset_button"
+            android:visibility="gone"
             />
 
         <Button
@@ -31,6 +32,7 @@
             android:layout_width="wrap_content"
             android:text="Turn Slapping on"
             android:layout_marginLeft="1dp"
+            android:visibility="gone"
             />
 
         <TextView
@@ -84,6 +86,16 @@
             android:layout_below="@id/training_toggle"
             android:text="No"
             android:visibility="gone"
+            />
+
+        <ImageView
+            android:id="@+id/logo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentEnd="true"
+            android:src="@drawable/slapp_320_grey"
             />
 
     </RelativeLayout>

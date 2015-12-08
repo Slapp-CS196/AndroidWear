@@ -32,7 +32,7 @@ import java.util.TimeZone;
 
 public class MainActivity extends WearableActivity implements SensorEventListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
-    public static final String TIME_KEY = "xyz.slapp.slapp_android";
+    public static final String TIME_KEY = "slapp_time";
 
     private static final SimpleDateFormat AMBIENT_DATE_FORMAT =
             new SimpleDateFormat("HH:mm", Locale.US);
@@ -47,9 +47,10 @@ public class MainActivity extends WearableActivity implements SensorEventListene
     private ArrayList<Float> logy = new ArrayList<Float>();
     private ArrayList<Float> logz = new ArrayList<Float>();
 */
-    private float maxx = (float) 0.0, maxy = (float) 0.0, maxz = (float) 0.0;
+    private float maxx, maxy, maxz;
     private int slapps = 0;
-    private boolean slappActive = false, detection = false, training = false;
+    private boolean slappActive, detection, training;
+    private long time;
 
     private GoogleApiClient mGoogleApiClient;
 
@@ -81,6 +82,14 @@ public class MainActivity extends WearableActivity implements SensorEventListene
         linear_acc = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
         sensorManager.registerListener(this, linear_acc, SensorManager.SENSOR_DELAY_NORMAL);
 
+        maxx = (float) 0.0;
+        maxy = (float) 0.0;
+        maxz = (float) 0.0;
+
+        slappActive = false;
+        detection = true;
+        training = false;
+
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addApiIfAvailable(Wearable.API)
                 .addConnectionCallbacks(this)
@@ -89,7 +98,9 @@ public class MainActivity extends WearableActivity implements SensorEventListene
 
         Button reset_button = (Button) findViewById(R.id.reset_button);
         Button slapp_toggle = (Button) findViewById(R.id.slapp_toggle);
+/*
         Button train_toggle = (Button) findViewById(R.id.training_toggle);
+*/
         ImageView logo = (ImageView) findViewById(R.id.logo);
 
         reset_button.setOnClickListener(new View.OnClickListener() {
@@ -113,13 +124,13 @@ public class MainActivity extends WearableActivity implements SensorEventListene
             }
         });
 
-        train_toggle.setOnClickListener(new View.OnClickListener() {
+/*        train_toggle.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 training = !training;
                 ((Button)findViewById(R.id.training_toggle)).setText("" + ((training)? "Stop" : "Start") + "training");
             }
-        });
+        });*/
 
         logo.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -127,6 +138,7 @@ public class MainActivity extends WearableActivity implements SensorEventListene
                 detection = !detection;
                 ((ImageView)findViewById(R.id.logo)).setImageResource(((detection) ? R.drawable.slapp_320_blue : R.drawable.slapp_320_grey));
                 ((Button)findViewById(R.id.slapp_toggle)).setText("Turn slapping " + ((detection) ? "off" : "on"));
+                Toast.makeText(getApplicationContext(), String.format("Slapp %s", (detection) ? "active" : "inactive"), Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -136,6 +148,7 @@ public class MainActivity extends WearableActivity implements SensorEventListene
                 ((Vibrator)getSystemService(VIBRATOR_SERVICE)).vibrate((long) 50);
                 slapps = 0;
                 maxx = maxy = maxz = (float)0.0;
+                Toast.makeText(getApplicationContext(), "Reset!", Toast.LENGTH_SHORT).show();
                 return true;
             }
         });
@@ -143,41 +156,35 @@ public class MainActivity extends WearableActivity implements SensorEventListene
 
     @Override
     public void onSensorChanged(SensorEvent event){
-
         if(detection) {
             if (Math.abs(event.values[2]) > 9.0 && Math.abs(event.values[0]) < 6.0 && Math.abs(event.values[1]) < 6.0){
                 if (!slappActive) {
-                    slapps++;
                     slappActive = true;
-                    ((TextView) findViewById(R.id.slapp_count)).setText("Slapps: " + slapps);
-                    sendSlapp();
-                    logEvent();
+                    time = System.currentTimeMillis();
+                    try {
+                        Thread.sleep(500);                               //To allow accelerometer values to normalize.
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
             }else if (event.values[2] <= 9.0 && slappActive) {
-                slappActive = false;
-                Toast.makeText(this, "Slapp!", Toast.LENGTH_SHORT).show();
-                updateDataLayer();
-                try {
-                    Thread.sleep(500);                               //To allow accelerometer values to normalize.
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            if(Math.abs(event.values[0]) > maxx) {
-                ((TextView) findViewById(R.id.x)).setText("X: " + event.values[0]);
-                maxx = Math.abs(event.values[0]);
-            }
-            if(Math.abs(event.values[1]) > maxy) {
-                ((TextView) findViewById(R.id.y)).setText("Y: " + event.values[1]);
-                maxy = Math.abs(event.values[1]);
-            }
-            if(Math.abs(event.values[2]) > maxz) {
-                ((TextView) findViewById(R.id.z)).setText("Z: " + event.values[2]);
-                maxz = Math.abs(event.values[2]);
+                sendSlapp();
             }
         }
+        if(Math.abs(event.values[0]) > maxx) {
+            ((TextView) findViewById(R.id.x)).setText("X: " + event.values[0]);
+            maxx = Math.abs(event.values[0]);
+        }
+        if(Math.abs(event.values[1]) > maxy) {
+            ((TextView) findViewById(R.id.y)).setText("Y: " + event.values[1]);
+            maxy = Math.abs(event.values[1]);
+        }
+        if(Math.abs(event.values[2]) > maxz) {
+            ((TextView) findViewById(R.id.z)).setText("Z: " + event.values[2]);
+            maxz = Math.abs(event.values[2]);
+        }
 
-        if(training){
+    if(training){
             if(Math.abs(event.values[0]) > 9.0 || Math.abs(event.values[1]) > 9.0 || Math.abs(event.values[2]) > 9.0){
                 //Just in case we need to train Slapp.
             }
@@ -189,11 +196,17 @@ public class MainActivity extends WearableActivity implements SensorEventListene
     }
 
     public void sendSlapp(){
-        //Phone app integration goes here.
+        if(detection) {
+            slapps++;
+            ((TextView) findViewById(R.id.slapp_count)).setText("Slapps: " + slapps);
+            slappActive = false;
+            Toast.makeText(this, "Slapp!", Toast.LENGTH_SHORT).show();
+            updateDataLayer(time);
+        }
     }
 
     public void logEvent(){
-
+        System.out.println("Training is ded. rip in pieces");
     }
 
     @Override
@@ -215,6 +228,20 @@ public class MainActivity extends WearableActivity implements SensorEventListene
         sensorManager.registerListener(this, linear_acc, SensorManager.SENSOR_DELAY_NORMAL);
         super.onExitAmbient();
     }
+/*
+
+    @Override
+    protected void onPause(){
+        super.onPause();
+        detection = false;
+    }
+
+    @Override
+    protected void onStop(){
+        super.onStop();
+        detection = false;
+    }
+*/
 
     private void updateDisplay() {
         if (isAmbient()) {
@@ -228,9 +255,8 @@ public class MainActivity extends WearableActivity implements SensorEventListene
         }
     }
 
-    private void updateDataLayer(){
+    private void updateDataLayer(long time){
         PutDataMapRequest putDataMapReq = PutDataMapRequest.create("/time");
-        long time = System.currentTimeMillis();
         putDataMapReq.getDataMap().putLong(TIME_KEY, time);
         PutDataRequest putDataReq = putDataMapReq.asPutDataRequest();
         System.out.println("Data should be updating with this: " + time);
@@ -252,6 +278,6 @@ public class MainActivity extends WearableActivity implements SensorEventListene
     public void onConnected (Bundle b){ }
 
     public void onConnectionFailed(ConnectionResult c) {
-        Toast.makeText(this, "Connection Failed!", Toast.LENGTH_SHORT);
+        Toast.makeText(this, "Connection Failed!", Toast.LENGTH_SHORT).show();
     }
 }

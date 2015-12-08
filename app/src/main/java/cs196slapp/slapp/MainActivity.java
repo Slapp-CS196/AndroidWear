@@ -19,6 +19,8 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.wearable.DataApi;
+import com.google.android.gms.wearable.Node;
+import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
@@ -27,8 +29,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends WearableActivity implements SensorEventListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
@@ -36,6 +40,8 @@ public class MainActivity extends WearableActivity implements SensorEventListene
 
     private static final SimpleDateFormat AMBIENT_DATE_FORMAT =
             new SimpleDateFormat("HH:mm", Locale.US);
+
+    private final long CONNECTION_TIME_OUT_MS = 1250;
 
     Date currentDate;
     SimpleDateFormat timeFormat, dateFormat;
@@ -47,10 +53,15 @@ public class MainActivity extends WearableActivity implements SensorEventListene
     private ArrayList<Float> logy = new ArrayList<Float>();
     private ArrayList<Float> logz = new ArrayList<Float>();
 */
+
+    private ArrayList<Long> timelog = new ArrayList<Long>();
+
+
     private float maxx, maxy, maxz;
     private int slapps = 0;
     private boolean slappActive, detection, training;
     private long time;
+    private String nodeId;
 
     private GoogleApiClient mGoogleApiClient;
 
@@ -102,13 +113,13 @@ public class MainActivity extends WearableActivity implements SensorEventListene
         Button train_toggle = (Button) findViewById(R.id.training_toggle);
 */
         ImageView logo = (ImageView) findViewById(R.id.logo);
+        logo.bringToFront();
 
         reset_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 slapps = 0;
                 ((TextView)findViewById(R.id.slapp_count)).setText("Slapps: " + slapps);
-
                 maxx = (float)0.0;
                 maxy = (float)0.0;
                 maxz = (float)0.0;
@@ -157,17 +168,17 @@ public class MainActivity extends WearableActivity implements SensorEventListene
     @Override
     public void onSensorChanged(SensorEvent event){
         if(detection) {
-            if (Math.abs(event.values[2]) > 9.0 && Math.abs(event.values[0]) < 6.0 && Math.abs(event.values[1]) < 6.0){
+            if (Math.abs(event.values[2]) > 9.0 && Math.abs(event.values[1]) < 6.0 && Math.abs(event.values[0]) < 6.0){
                 if (!slappActive) {
                     slappActive = true;
                     time = System.currentTimeMillis();
                     try {
-                        Thread.sleep(500);                               //To allow accelerometer values to normalize.
+                        Thread.sleep(700);                               //To allow accelerometer values to normalize.
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
-            }else if (event.values[2] <= 9.0 && slappActive) {
+            }else if (event.values[2] <= 7.5 && slappActive) {
                 sendSlapp();
             }
         }
@@ -183,12 +194,6 @@ public class MainActivity extends WearableActivity implements SensorEventListene
             ((TextView) findViewById(R.id.z)).setText("Z: " + event.values[2]);
             maxz = Math.abs(event.values[2]);
         }
-
-    if(training){
-            if(Math.abs(event.values[0]) > 9.0 || Math.abs(event.values[1]) > 9.0 || Math.abs(event.values[2]) > 9.0){
-                //Just in case we need to train Slapp.
-            }
-        }
     }
 
     public void onAccuracyChanged(Sensor s, int a){
@@ -197,12 +202,41 @@ public class MainActivity extends WearableActivity implements SensorEventListene
 
     public void sendSlapp(){
         if(detection) {
+
             slapps++;
             ((TextView) findViewById(R.id.slapp_count)).setText("Slapps: " + slapps);
             slappActive = false;
             Toast.makeText(this, "Slapp!", Toast.LENGTH_SHORT).show();
-            updateDataLayer(time);
+//          updateDataLayer(time);
+            final GoogleApiClient client = getGoogleApiClient(this);
+            if (nodeId != null) {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        client.blockingConnect(CONNECTION_TIME_OUT_MS, TimeUnit.MILLISECONDS);
+                        Wearable.MessageApi.sendMessage(client, nodeId, "" + time, null);
+                        client.disconnect();
+                    }
+                }).start();
+            }
         }
+    }
+
+    private void retrieveDeviceNode() {
+        final GoogleApiClient client = getGoogleApiClient(this);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                client.blockingConnect(CONNECTION_TIME_OUT_MS, TimeUnit.MILLISECONDS);
+                NodeApi.GetConnectedNodesResult result =
+                        Wearable.NodeApi.getConnectedNodes(client).await();
+                List<Node> nodes = result.getNodes();
+                if (nodes.size() > 0) {
+                    nodeId = nodes.get(0).getId();
+                }
+                client.disconnect();
+            }
+        }).start();
     }
 
     public void logEvent(){
@@ -279,5 +313,11 @@ public class MainActivity extends WearableActivity implements SensorEventListene
 
     public void onConnectionFailed(ConnectionResult c) {
         Toast.makeText(this, "Connection Failed!", Toast.LENGTH_SHORT).show();
+    }
+
+    private GoogleApiClient getGoogleApiClient(Context context) {
+        return new GoogleApiClient.Builder(context)
+                .addApi(Wearable.API)
+                .build();
     }
 }
